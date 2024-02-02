@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request, make_response
+#gets request from flask package
+
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 
@@ -16,8 +18,68 @@ db.init_app(app)
 
 api = Api(app)
 
+#no app.route and methods???
 class Home(Resource):
-    pass
+    def get(self):
+        response_dict = {
+            "message": "Welcome to the Newsletter RESTful API."
+        }
+
+        response = make_response(
+            response_dict,
+            200
+        )
+        return response
+    
+api.add_resource(Home, '/')
+#this serves as a app.route...
+#does it really make a difference though? Really?
+
+class Newsletters(Resource):
+    def get(self):
+        response_dict_list = [n.to_dict() for n in Newsletter.query.all()]
+
+        response = make_response(
+            response_dict_list,
+            200
+        )
+
+        return response
+    
+    def post(self):
+        new_record = Newsletter(
+            title=request.form['title'],
+            body=request.form['body']
+        )
+
+        db.session.add(new_record)
+        db.commit()
+
+        new_record_dict = new_record.to_dict()
+
+        response = make_response(
+            new_record_dict,
+            201
+        )
+
+        return response
+
+api.add_resource(Newsletters, '/newsletters')
+#do not need to run add_resouse twice for both get and post. One will due.
+
+class NewsletterByID(Resource):
+    def get(self, id):
+        newsletter = Newsletter.query.filter_by(id==id).first().to_dict()
+
+        response = make_response(
+            newsletter,
+            200
+        )
+
+        return response
+    
+api.add_resource(NewsletterByID, '/newsletter/<int:id>')
+#the formatting for a variable url is the same as routing...
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
